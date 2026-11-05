@@ -1,0 +1,67 @@
+<% content_for :title, "Agents" %>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0">Agents</h1>
+  <span class="text-body-secondary"><%= pluralize(@users.size, "person") %></span>
+  <% if policy(User).create? %>
+    <div class="ms-auto d-flex gap-2">
+      <%= link_to "Paste a list", bulk_new_agents_path, class: "btn btn-outline-primary btn-sm" %>
+      <%= link_to "Add person", new_agent_path(team_id: params[:team_id]), class: "btn btn-primary btn-sm" %>
+    </div>
+  <% end %>
+</div>
+
+<%= form_with url: agents_path, method: :get, class: "row g-2 mb-3" do |f| %>
+  <div class="col-md-3"><%= f.search_field :q, value: params[:q], placeholder: "Search name, email, phone ID", class: "form-control form-control-sm" %></div>
+  <div class="col-md-2"><%= f.select :role, User::ROLES.map { |r| [ role_label(r), r ] }, { include_blank: "All roles", selected: @role }, class: "form-select form-select-sm" %></div>
+  <div class="col-md-2"><%= f.select :team_id, @teams.map { |t| [ t.name, t.id ] }, { include_blank: "All teams", selected: params[:team_id].to_i }, class: "form-select form-select-sm" %></div>
+  <div class="col-md-2"><%= f.select :active, [ [ "Active", "1" ], [ "Inactive", "0" ] ], { include_blank: "Active and inactive", selected: params[:active] }, class: "form-select form-select-sm" %></div>
+  <div class="col-auto"><%= f.submit "Filter", class: "btn btn-sm btn-outline-secondary" %> <%= link_to "Clear", agents_path, class: "btn btn-sm btn-link" %></div>
+<% end %>
+
+<%= form_with url: bulk_move_agents_path, method: :post, id: "bulk-move" do |f| %>
+  <% if policy(User).create? %>
+    <div class="d-flex gap-2 align-items-center mb-2">
+      <span class="small text-body-secondary">With the ticked agents:</span>
+      <%= f.select :team_id, @teams.map { |t| [ t.name, t.id ] }, { prompt: "Move to team…" }, class: "form-select form-select-sm w-auto", required: true %>
+      <%= f.submit "Move", class: "btn btn-sm btn-outline-secondary" %>
+    </div>
+  <% end %>
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-hover align-middle mb-0" id="agents">
+        <thead>
+          <tr>
+            <% if policy(User).create? %><th style="width:2rem"></th><% end %>
+            <th>Name</th><th>Role</th><th>Team</th><th>Phone ID</th><th>Email</th><th>Status</th><th></th>
+          </tr>
+        </thead>
+        <tbody>
+          <% @users.each do |u| %>
+            <tr class="<%= 'text-body-secondary' unless u.active? %>" data-user="<%= u.email_address %>">
+              <% if policy(User).create? %>
+                <td><%= check_box_tag "ids[]", u.id, false, id: "ids_#{u.id}", class: "form-check-input", disabled: !u.agent? %></td>
+              <% end %>
+              <td><%= link_to u.full_name, agent_path(u), class: "link-body-emphasis link-underline-opacity-0 link-underline-opacity-75-hover" %></td>
+              <td><span class="badge text-bg-secondary"><%= role_label(u.role) %></span></td>
+              <td><%= u.team&.name || "—" %></td>
+              <td><%= u.phone_agent_id || "—" %></td>
+              <td class="small"><%= u.email_address %></td>
+              <td><%= u.active? ? "Active" : "Inactive" %></td>
+              <td class="text-end text-nowrap">
+                <% if policy(u).update? %>
+                  <%= link_to "Edit", edit_agent_path(u), class: "btn btn-sm btn-outline-secondary" %>
+                  <% if u.active? && policy(u).destroy? %>
+                    <%= button_to "Deactivate", deactivate_agent_path(u), method: :patch, class: "btn btn-sm btn-outline-danger", form: { class: "d-inline", data: { turbo_confirm: "Deactivate #{u.full_name}? They won't be able to sign in." } } %>
+                  <% elsif !u.active? %>
+                    <%= button_to "Reactivate", reactivate_agent_path(u), method: :patch, class: "btn btn-sm btn-outline-success", form: { class: "d-inline" } %>
+                  <% end %>
+                <% end %>
+              </td>
+            </tr>
+          <% end %>
+          <% if @users.empty? %><tr><td colspan="8" class="text-center text-body-secondary py-4">Nobody matches.</td></tr><% end %>
+        </tbody>
+      </table>
+    </div>
+  </div>
+<% end %>

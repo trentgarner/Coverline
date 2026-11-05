@@ -1,0 +1,82 @@
+<% content_for :title, @user.full_name %>
+<% content_for :head do %><meta name="turbo-refresh-method" content="morph"><meta name="turbo-refresh-scroll" content="preserve"><% end %>
+<%= turbo_stream_from @user, :status %>
+<% if policy(User).index? %><div class="mb-3"><%= link_to "← Agents", agents_path, class: "link-secondary small" %></div><% end %>
+
+<div class="d-flex flex-wrap align-items-center gap-3 mb-4">
+  <h1 class="h3 mb-0"><%= @user.full_name %></h1>
+  <span class="badge text-bg-secondary"><%= role_label(@user.role) %></span>
+  <span class="text-body-secondary"><%= @user.team&.name %></span>
+  <% if @user.phone_agent_id.present? %><span class="text-body-secondary small">Phone ID <%= @user.phone_agent_id %></span><% end %>
+  <% if policy(@user).update? %><%= link_to "Edit", edit_agent_path(@user), class: "btn btn-sm btn-outline-secondary ms-auto" %><% end %>
+</div>
+
+<div class="row g-4" data-controller="elapsed" data-elapsed-server-now-value="<%= (Time.current.to_f * 1000).to_i %>">
+  <div class="col-lg-4">
+    <div class="card mb-4" id="current-status">
+      <div class="card-header fw-semibold">Right now</div>
+      <div class="card-body">
+        <% if @current_event %>
+          <div class="fs-4 mb-1"><%= status_pill(@current_event.status) %></div>
+          <div class="text-body-secondary">for <span class="elapsed" data-elapsed-since="<%= (@run_started_at.to_f * 1000).to_i %>"
+            <% if @current_event.status.time_limit_minutes %>data-limit-seconds="<%= @current_event.status.time_limit_minutes * 60 %>"<% end %>><%= format_elapsed(Time.current - @run_started_at) %></span>
+            <span class="small">(since <%= event_time(@run_started_at) %>)</span></div>
+          <div class="small text-body-secondary mt-1">Set by <%= @current_event.source == "manual" ? "a manager" : (@current_event.source == "phone" ? "the phone system" : @current_event.source) %></div>
+        <% else %>
+          <div class="text-body-secondary">No status recorded yet.</div>
+        <% end %>
+      </div>
+    </div>
+
+    <% if @can_override %>
+      <div class="card" id="override">
+        <div class="card-header fw-semibold">Set status by hand</div>
+        <div class="card-body">
+          <%= form_with url: override_status_agent_path(@user), class: "d-flex gap-2" do |f| %>
+            <%= f.select :status_id, @override_statuses.map { |s| [ s.name, s.id ] }, { selected: @current_event&.status_id }, class: "form-select form-select-sm" %>
+            <%= f.submit "Set", class: "btn btn-sm btn-primary" %>
+          <% end %>
+          <div class="form-text">Use this when the phone system isn't reporting. It's recorded in the audit log.</div>
+        </div>
+      </div>
+    <% end %>
+  </div>
+
+  <div class="col-lg-8">
+    <div class="card mb-4" id="day-bar-card">
+      <div class="card-header fw-semibold">Today at a glance</div>
+      <div class="card-body" data-controller="day-bar"
+           data-day-bar-events-value="<%= @todays_events.map { |e| [ (e.started_at.to_f * 1000).to_i, (e.ended_at ? (e.ended_at.to_f * 1000).to_i : nil), e.status_id ] }.to_json %>"
+           data-day-bar-statuses-value="<%= @todays_events.map(&:status).uniq.to_h { |s| [ s.id, { name: s.name, color: s.color } ] }.to_json %>"
+           data-day-bar-time-zone-value="<%= current_user.organization.timezone %>"
+           data-day-bar-day-start-value="<%= (Time.zone.now.beginning_of_day.to_f * 1000).to_i %>"
+           data-day-bar-server-now-value="<%= (Time.current.to_f * 1000).to_i %>">
+        <div class="board-axis" data-day-bar-target="axis"></div>
+        <div class="board-bar" data-day-bar-target="bar"></div>
+        <div class="mt-2 small">
+          <% @todays_events.map(&:status).uniq.each do |s| %><span class="me-2"><%= status_pill(s) %></span><% end %>
+        </div>
+      </div>
+    </div>
+    <div class="card" id="todays-events">
+      <div class="card-header fw-semibold">Today</div>
+      <div class="table-responsive">
+        <table class="table table-sm align-middle mb-0">
+          <thead><tr><th>From</th><th>To</th><th>Status</th><th>Length</th><th>Source</th></tr></thead>
+          <tbody>
+            <% @todays_events.each do |event| %>
+              <tr data-event="<%= event.id %>">
+                <td class="text-nowrap"><%= event_time(event.started_at) %></td>
+                <td class="text-nowrap"><%= event.ended_at ? event_time(event.ended_at) : "now" %></td>
+                <td><%= status_pill(event.status) %></td>
+                <td><%= distance_of_time_in_words(event.started_at, event.ended_at || Time.current, include_seconds: true) %></td>
+                <td class="small text-body-secondary"><%= event.source %></td>
+              </tr>
+            <% end %>
+            <% if @todays_events.empty? %><tr><td colspan="5" class="text-center text-body-secondary py-4">Nothing recorded today.</td></tr><% end %>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>

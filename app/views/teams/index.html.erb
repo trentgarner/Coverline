@@ -1,0 +1,18 @@
+<% content_for :title, "Teams" %>
+<div class="d-flex align-items-center mb-3">
+  <h1 class="h3 mb-0">Teams</h1>
+  <% if policy(Team).create? %><%= link_to "New team", new_team_path, class: "btn btn-primary btn-sm ms-auto" %><% end %>
+</div>
+<div class="card"><div class="table-responsive"><table class="table table-hover align-middle mb-0" id="teams">
+  <thead><tr><th>Team</th><th>Agents</th><th>Managers with access</th></tr></thead>
+  <tbody>
+    <% @teams.each do |team| %>
+      <tr data-team="<%= team.name %>">
+        <td><%= link_to team.name, team_path(team) %></td>
+        <td><%= @agent_counts[team.id].to_i %></td>
+        <td><%= @manager_counts[team.id].to_i %></td>
+      </tr>
+    <% end %>
+    <% if @teams.empty? %><tr><td colspan="3" class="text-center text-body-secondary py-4">No teams yet.</td></tr><% end %>
+  </tbody>
+</table></div></div>

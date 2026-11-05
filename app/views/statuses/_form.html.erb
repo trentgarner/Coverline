@@ -1,0 +1,29 @@
+<%= form_with model: status, data: { controller: "status-form", status_form_productive_value: Status::PRODUCTIVE_CATEGORIES.to_json,
+                                     status_form_cft_value: Status::CFT_CATEGORIES.to_json, status_form_apply_defaults_value: !status.persisted? } do |f| %>
+  <% if status.errors.any? %><div class="alert alert-danger"><ul class="mb-0"><% status.errors.full_messages.each do |m| %><li><%= m %></li><% end %></ul></div><% end %>
+  <div class="row g-3">
+    <div class="col-md-6"><%= f.label :name, class: "form-label" %><%= f.text_field :name, class: "form-control", autofocus: true, data: { status_form_target: "name", action: "input->status-form#refresh" } %></div>
+    <div class="col-md-6"><%= f.label :category, class: "form-label" %>
+      <%= f.select :category, Status::CATEGORIES.map { |c| [ c.humanize, c ] }, {}, class: "form-select", data: { status_form_target: "category", action: "change->status-form#categoryChanged" } %></div>
+    <div class="col-md-6">
+      <%= f.label :color, class: "form-label" %>
+      <div class="input-group">
+        <input type="color" class="form-control form-control-color" value="<%= status.color %>" data-status-form-target="picker" data-action="input->status-form#pickerChanged" aria-label="Pick a color">
+        <%= f.text_field :color, class: "form-control font-monospace", maxlength: 7, data: { status_form_target: "hex", action: "input->status-form#hexChanged" } %>
+      </div>
+      <div class="mt-2">Preview: <span class="badge rounded-pill" data-status-form-target="pill">Status name</span></div>
+    </div>
+    <div class="col-md-6"><%= f.label :time_limit_minutes, "Time limit (minutes, optional)", class: "form-label" %>
+      <%= f.number_field :time_limit_minutes, min: 1, class: "form-control" %>
+      <div class="form-text">The board flags an agent who stays in this status longer than this (e.g. 15 for a break).</div></div>
+    <div class="col-md-6">
+      <div class="form-check"><%= f.check_box :counts_toward_cft, class: "form-check-input", data: { status_form_target: "cft" } %><%= f.label :counts_toward_cft, "Counts toward CFT (available / on-call time)", class: "form-check-label" %></div>
+      <div class="form-check"><%= f.check_box :productive, class: "form-check-input", data: { status_form_target: "productive" } %><%= f.label :productive, "Productive (matches a scheduled “Working” block)", class: "form-check-label" %></div>
+      <div class="form-check"><%= f.check_box :active, class: "form-check-input" %><%= f.label :active, "Active (agents can be put in it)", class: "form-check-label" %></div>
+    </div>
+    <div class="col-md-6"><%= f.label :phone_codes_text, "Phone system codes (one per line)", class: "form-label" %>
+      <%= f.text_area :phone_codes_text, rows: 5, class: "form-control font-monospace", placeholder: "AUX-2\nBreak" %>
+      <div class="form-text">Any of these codes from the phone system sets an agent to this status.</div></div>
+  </div>
+  <div class="d-flex gap-2 mt-4"><%= f.submit class: "btn btn-primary" %><%= link_to "Cancel", statuses_path, class: "btn btn-outline-secondary" %></div>
+<% end %>

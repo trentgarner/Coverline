@@ -1,0 +1,53 @@
+<% content_for :title, @team.name %>
+<div class="mb-3"><%= link_to "← Teams", teams_path, class: "link-secondary small" %></div>
+<div class="d-flex flex-wrap align-items-center gap-2 mb-3">
+  <h1 class="h3 mb-0"><%= @team.name %></h1>
+  <span class="text-body-secondary"><%= pluralize(@agents.size, "agent") %></span>
+  <div class="ms-auto d-flex gap-2">
+    <% if policy(User).create? %><%= link_to "Add agents", new_agent_path(team_id: @team.id), class: "btn btn-primary btn-sm" %> <%= link_to "Paste a list", bulk_new_agents_path(team_id: @team.id), class: "btn btn-outline-primary btn-sm" %><% end %>
+    <% if policy(@team).update? %><%= link_to "Rename", edit_team_path(@team), class: "btn btn-outline-secondary btn-sm" %><% end %>
+    <% if policy(@team).destroy? %><%= button_to "Delete", team_path(@team), method: :delete, class: "btn btn-outline-danger btn-sm", form: { data: { turbo_confirm: "Delete #{@team.name}?" } } %><% end %>
+  </div>
+</div>
+
+<div class="row g-4">
+  <div class="col-lg-7">
+    <div class="card"><div class="card-header fw-semibold">Agents</div>
+      <ul class="list-group list-group-flush" id="members">
+        <% @agents.each do |a| %>
+          <li class="list-group-item d-flex justify-content-between <%= 'text-body-secondary' unless a.active? %>" data-member="<%= a.email_address %>">
+            <span><%= a.full_name %><%= " (inactive)" unless a.active? %></span><span class="text-body-secondary small"><%= a.phone_agent_id %></span>
+          </li>
+        <% end %>
+        <% if @agents.empty? %><li class="list-group-item text-body-secondary">No agents on this team yet.</li><% end %>
+      </ul>
+    </div>
+  </div>
+  <div class="col-lg-5">
+    <div class="card"><div class="card-header fw-semibold">Managers with access</div>
+      <ul class="list-group list-group-flush" id="managers">
+        <% @team.team_accesses.includes(:user).sort_by { |a| a.user.last_name }.each do |access| %>
+          <li class="list-group-item d-flex justify-content-between align-items-center" data-manager="<%= access.user.email_address %>">
+            <span><%= access.user.full_name %></span>
+            <% if policy(@team).grant_access? %>
+              <%= button_to "Remove", team_team_access_path(@team, access), method: :delete, class: "btn btn-sm btn-outline-danger", form: { data: { turbo_confirm: "Remove #{access.user.full_name}'s access to #{@team.name}?" } } %>
+            <% end %>
+          </li>
+        <% end %>
+        <% if @managers.empty? %><li class="list-group-item text-body-secondary">No managers can see this team yet.</li><% end %>
+      </ul>
+      <% if policy(@team).grant_access? %>
+        <div class="card-footer">
+          <% if @grantable.any? %>
+            <%= form_with url: team_team_accesses_path(@team), class: "d-flex gap-2" do |f| %>
+              <%= f.select :user_id, @grantable.map { |m| [ m.full_name, m.id ] }, {}, class: "form-select form-select-sm" %>
+              <%= f.submit "Grant access", class: "btn btn-sm btn-primary text-nowrap" %>
+            <% end %>
+          <% else %>
+            <span class="small text-body-secondary">Every manager already has access. Add managers on the <%= link_to "Agents page", new_agent_path %>.</span>
+          <% end %>
+        </div>
+      <% end %>
+    </div>
+  </div>
+</div>

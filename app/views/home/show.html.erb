@@ -1,0 +1,69 @@
+<% content_for :title, "Home" %>
+<div class="d-flex align-items-center gap-3 mb-4">
+  <h1 class="h3 mb-0">Welcome, <%= current_user.first_name %></h1>
+  <span class="badge text-bg-primary fs-6"><%= role_label(current_user.role) %></span>
+  <span class="text-body-secondary"><%= current_user.organization.name %></span>
+</div>
+
+<% if policy(:board).view? %>
+  <div class="mb-4"><%= link_to "Open the live board", board_path, class: "btn btn-primary" %></div>
+<% end %>
+<% if current_user.agent? %>
+  <div class="card mb-4" style="max-width: 28rem" id="my-status" data-controller="elapsed" data-elapsed-server-now-value="<%= (Time.current.to_f * 1000).to_i %>">
+    <div class="card-header fw-semibold">Your status</div>
+    <div class="card-body">
+      <% if @my_row&.status %>
+        <div class="fs-4"><%= status_pill(@my_row.status) %></div>
+        <div class="text-body-secondary">for <span class="elapsed" data-elapsed-since="<%= (@my_row.run_started_at.to_f * 1000).to_i %>"
+          <% if @my_row.status.time_limit_minutes %>data-limit-seconds="<%= @my_row.status.time_limit_minutes * 60 %>"<% end %>><%= format_elapsed(Time.current - @my_row.run_started_at) %></span></div>
+        <%= link_to "See my day", agent_path(current_user), class: "small" %>
+      <% else %>
+        <div class="text-body-secondary">No status recorded yet.</div>
+      <% end %>
+    </div>
+  </div>
+<% end %>
+
+<div class="row g-4">
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">What you can do</div>
+      <ul class="list-group list-group-flush" id="capabilities">
+        <% capabilities_for(current_user).each do |cap| %>
+          <li class="list-group-item d-flex align-items-start gap-2 <%= 'text-body-secondary' unless cap.allowed %>"
+              data-capability="<%= cap.key %>" data-allowed="<%= cap.allowed %>">
+            <span class="<%= cap.allowed ? 'text-success' : 'text-danger' %>"><%= cap.allowed ? "✓" : "✕" %></span>
+            <span><%= cap.label %></span>
+          </li>
+        <% end %>
+      </ul>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">Teams you can see <span class="badge text-bg-secondary ms-1"><%= @teams.size %></span></div>
+      <% if @teams.empty? %>
+        <div class="card-body text-body-secondary">None. <%= current_user.agent? ? "Agents see their own status only." : "Ask an admin to grant you a team." %></div>
+      <% else %>
+        <ul class="list-group list-group-flush" id="teams">
+          <% @teams.each do |team| %><li class="list-group-item" data-team="<%= team.name %>"><%= team.name %></li><% end %>
+        </ul>
+      <% end %>
+    </div>
+  </div>
+
+  <div class="col-lg-4">
+    <div class="card h-100">
+      <div class="card-header fw-semibold">People you can see <span class="badge text-bg-secondary ms-1"><%= @people.size %></span></div>
+      <div class="list-group list-group-flush" id="people" style="max-height: 24rem; overflow: auto">
+        <% @people.each do |person| %>
+          <div class="list-group-item d-flex justify-content-between" data-person="<%= person.email_address %>">
+            <span><%= person.full_name %></span>
+            <span class="text-body-secondary small"><%= person.team&.name || role_label(person.role) %></span>
+          </div>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

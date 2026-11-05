@@ -1,0 +1,108 @@
+<% digest = BCrypt::Password.create("password", cost: 4) %>
+
+super:
+  organization: summit
+  role: super_user
+  first_name: Sam
+  last_name: Super
+  email_address: super@example.com
+  password_digest: <%= digest %>
+
+admin:
+  organization: summit
+  role: admin
+  first_name: Ada
+  last_name: Admin
+  email_address: admin@example.com
+  password_digest: <%= digest %>
+
+second_admin:
+  organization: summit
+  role: admin
+  first_name: Alec
+  last_name: Admin
+  email_address: admin2@example.com
+  password_digest: <%= digest %>
+
+manager_ab:
+  organization: summit
+  role: manager
+  first_name: Maya
+  last_name: Manager
+  email_address: maya@example.com
+  password_digest: <%= digest %>
+
+manager_c:
+  organization: summit
+  role: manager
+  first_name: Marco
+  last_name: Manager
+  email_address: marco@example.com
+  password_digest: <%= digest %>
+
+agent_a1:
+  organization: summit
+  team: team_a
+  role: agent
+  first_name: Alex
+  last_name: Agent
+  email_address: alex@example.com
+  phone_agent_id: A1001
+  password_digest: <%= digest %>
+
+agent_a2:
+  organization: summit
+  team: team_a
+  role: agent
+  first_name: Avery
+  last_name: Agent
+  email_address: avery@example.com
+  phone_agent_id: A1002
+  password_digest: <%= digest %>
+
+agent_b1:
+  organization: summit
+  team: team_b
+  role: agent
+  first_name: Blake
+  last_name: Agent
+  email_address: blake@example.com
+  phone_agent_id: B1001
+  password_digest: <%= digest %>
+
+agent_c1:
+  organization: summit
+  team: team_c
+  role: agent
+  first_name: Casey
+  last_name: Agent
+  email_address: casey@example.com
+  phone_agent_id: C1001
+  password_digest: <%= digest %>
+
+inactive_agent:
+  organization: summit
+  team: team_a
+  role: agent
+  active: false
+  first_name: Idle
+  last_name: Agent
+  email_address: idle@example.com
+  password_digest: <%= digest %>
+
+other_admin:
+  organization: other
+  role: admin
+  first_name: Olive
+  last_name: Outsider
+  email_address: olive@other.example.com
+  password_digest: <%= digest %>
+
+other_agent:
+  organization: other
+  team: other_team
+  role: agent
+  first_name: Otto
+  last_name: Outsider
+  email_address: otto@other.example.com
+  password_digest: <%= digest %>

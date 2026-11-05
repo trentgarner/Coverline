@@ -1,0 +1,11 @@
+maya_team_a:
+  user: manager_ab
+  team: team_a
+
+maya_team_b:
+  user: manager_ab
+  team: team_b
+
+marco_team_c:
+  user: manager_c
+  team: team_c

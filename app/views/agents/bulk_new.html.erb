@@ -1,0 +1,20 @@
+<% content_for :title, "Add agents from a list" %>
+<div class="mb-3"><%= link_to "← Agents", agents_path, class: "link-secondary small" %></div>
+<h1 class="h3 mb-1">Add agents from a list</h1>
+<p class="text-body-secondary">One agent per line: <code>first name, last name, email, phone ID</code> (phone ID is optional). Copy and paste straight from a spreadsheet works too. Each person gets a random temporary password, shown once on the next page.</p>
+<div class="card" style="max-width: 48rem"><div class="card-body">
+  <% if @errors.present? %>
+    <div class="alert alert-danger"><strong>Nothing was added.</strong><ul class="mb-0"><% @errors.each do |e| %><li><%= e %></li><% end %></ul></div>
+  <% end %>
+  <%= form_with url: bulk_create_agents_path do |f| %>
+    <div class="mb-3">
+      <%= f.label :team_id, "Team for all of them", class: "form-label" %>
+      <%= f.select :team_id, @teams.map { |t| [ t.name, t.id ] }, { include_blank: "Choose a team…", selected: params[:team_id].to_i }, class: "form-select" %>
+    </div>
+    <div class="mb-3">
+      <%= f.label :list, "Agents", class: "form-label" %>
+      <%= f.text_area :list, value: @list, rows: 14, class: "form-control font-monospace", placeholder: "Alex, Archer, alex.archer@example.com, A1001\nAvery, Bellamy, avery.bellamy@example.com, A1002" %>
+    </div>
+    <%= f.submit "Add agents", class: "btn btn-primary" %>
+  <% end %>
+</div></div>

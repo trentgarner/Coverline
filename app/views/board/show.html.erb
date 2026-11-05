@@ -1,0 +1,79 @@
+<% content_for :title, "Board" %>
+<% content_for :head do %><meta name="turbo-refresh-method" content="morph"><meta name="turbo-refresh-scroll" content="preserve"><% end %>
+<% @stream_sources.each { |source| %><%= turbo_stream_from(*source) %><% } %>
+
+<% statuses_json = @statuses.to_h { |s| [ s.id, { name: s.name, color: s.color, order: s.sort_order, category: s.category } ] } %>
+<div data-controller="board elapsed"
+     data-board-statuses-value="<%= statuses_json.to_json %>"
+     data-board-time-zone-value="<%= @organization.timezone %>"
+     data-board-day-start-value="<%= (@day_start.to_f * 1000).to_i %>"
+     data-elapsed-server-now-value="<%= (Time.current.to_f * 1000).to_i %>">
+
+  <div class="d-flex flex-wrap align-items-center gap-3 mb-3">
+    <h1 class="h3 mb-0">Board</h1>
+    <span class="badge text-bg-secondary" id="live-badge" data-board-target="live">Connecting…</span>
+    <span class="text-body-secondary small" id="board-count" data-board-target="count"></span>
+  </div>
+
+  <div class="row g-2 mb-3 align-items-end" id="board-controls">
+    <div class="col-sm-6 col-lg-3"><input type="search" class="form-control form-control-sm" placeholder="Find an agent" aria-label="Find an agent"
+                                          data-board-target="search" data-action="input->board#changed"></div>
+    <div class="col-6 col-lg-2">
+      <select class="form-select form-select-sm" aria-label="Team" data-board-target="team" data-action="change->board#changed">
+        <option value="">All teams</option>
+        <% @teams.each do |team| %><option value="<%= team.id %>"><%= team.name %></option><% end %>
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <select class="form-select form-select-sm" aria-label="Status" data-board-target="statusFilter" data-action="change->board#changed">
+        <option value="">Any status</option>
+        <% @statuses.each do |s| %><option value="<%= s.id %>"><%= s.name %></option><% end %>
+      </select>
+    </div>
+    <div class="col-6 col-lg-2">
+      <select class="form-select form-select-sm" aria-label="Sort by" data-board-target="sort" data-action="change->board#changed">
+        <option value="name">Sort: name</option>
+        <option value="status">Sort: status</option>
+        <option value="time">Sort: time in status</option>
+      </select>
+    </div>
+    <div class="col-auto"><button type="button" class="btn btn-sm btn-link" data-action="board#reset">Reset</button></div>
+  </div>
+
+  <div class="card">
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0 board-table" id="board">
+        <thead>
+          <tr>
+            <th style="width: 15rem">Agent</th>
+            <th style="width: 10rem">Status</th>
+            <th style="width: 8rem">Time in status</th>
+            <th style="width: 6.5rem">Logged in</th>
+            <th>Today <span class="board-axis" data-board-target="axis"></span></th>
+          </tr>
+        </thead>
+        <% @groups.each do |team, rows| %>
+          <tbody data-team-body data-team-id="<%= team&.id %>">
+            <tr class="board-team-header" data-team-header><th colspan="5"><%= team&.name || "No team" %> <span class="text-body-secondary fw-normal small" data-team-count></span></th></tr>
+            <% rows.each do |row| %><%= render "board/row", row: row %><% end %>
+          </tbody>
+        <% end %>
+        <% if @rows.empty? %>
+          <tbody><tr><td colspan="5" class="text-center text-body-secondary py-5">
+            No agents to show. <%= current_user.admin_or_above? ? "Add some on the Agents page." : "Ask an admin to grant you a team." %>
+          </td></tr></tbody>
+        <% end %>
+        <tfoot>
+          <tr class="board-footer"><td colspan="5">
+            <span class="fw-semibold me-3">In view:</span>
+            <span id="board-totals" data-board-target="totals">
+              <% counts = @rows.group_by { |r| r.status&.id } %>
+              <% @statuses.each do |s| %><span class="me-3"><%= status_pill(s, "#{counts[s.id]&.size.to_i} #{s.name}") %></span><% end %>
+            </span>
+          </td></tr>
+        </tfoot>
+      </table>
+    </div>
+    <div class="text-center text-body-secondary py-4 d-none" data-board-target="empty">No agents match those filters.</div>
+  </div>
+</div>
