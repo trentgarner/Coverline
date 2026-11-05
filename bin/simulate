@@ -1,0 +1,63 @@
+#!/usr/bin/env ruby
+# Moves fake agents between statuses every few seconds by sending events to the webhook,
+# the same way the phone system will. Needs the server running and an API key.
+#
+#   bin/simulate --key cvl_xxx                 # key from the Integration screen
+#   COVERLINE_API_KEY=cvl_xxx bin/simulate
+#   bin/rails coverline:dev_api_key            # prints a fresh key for development
+#
+#   --url URL        webhook base (default http://localhost:3000)
+#   --interval SECS  pause between moves (default 3)
+#   --moves N        agents moved each time (default 2)
+#   --count N        only use the first N agents (default all)
+#   --rounds N       stop after N rounds (default: run until Ctrl-C)
+require_relative "../config/environment"
+require "net/http"
+require "optparse"
+require "json"
+
+opts = { url: "http://localhost:3000", interval: 3.0, moves: 2, count: nil, rounds: nil, key: ENV["COVERLINE_API_KEY"] }
+OptionParser.new do |o|
+  o.on("--url URL") { |v| opts[:url] = v }
+  o.on("--key KEY") { |v| opts[:key] = v }
+  o.on("--interval SECS", Float) { |v| opts[:interval] = v }
+  o.on("--moves N", Integer) { |v| opts[:moves] = v }
+  o.on("--count N", Integer) { |v| opts[:count] = v }
+  o.on("--rounds N", Integer) { |v| opts[:rounds] = v }
+end.parse!
+
+abort "No API key. Pass --key, set COVERLINE_API_KEY, or run: bin/rails coverline:dev_api_key" if opts[:key].blank?
+abort "Refusing to run against production." if Rails.env.production?
+
+org = Organization.first or abort "No organization. Run bin/rails db:seed first."
+agents = org.users.where(role: "agent", active: true).where.not(phone_agent_id: nil).order(:phone_agent_id)
+agents = agents.limit(opts[:count]) if opts[:count]
+codes = org.statuses.active.joins(:status_codes).order("statuses.sort_order, status_codes.id").pluck("statuses.name", "status_codes.phone_code").to_h
+abort "No agents with phone IDs, or no statuses with phone codes. Run bin/rails db:seed." if agents.empty? || codes.empty?
+
+sim = StatusSimulator.new(phone_ids: agents.pluck(:phone_agent_id), codes: codes)
+uri = URI.join(opts[:url], "/api/v1/status_events")
+puts "Simulating #{agents.size} agents against #{uri} (Ctrl-C to stop)"
+
+send_events = lambda do |events|
+  req = Net::HTTP::Post.new(uri, "Content-Type" => "application/json", "Authorization" => "Bearer #{opts[:key]}")
+  req.body = { events: events }.to_json
+  res = Net::HTTP.start(uri.host, uri.port, use_ssl: uri.scheme == "https") { |http| http.request(req) }
+  abort "Webhook said #{res.code}: #{res.body}" unless res.is_a?(Net::HTTPSuccess)
+  JSON.parse(res.body)["results"]
+end
+
+# Everyone starts by logging in.
+round = 0
+send_events.call(sim.step(count: agents.size, now: Time.current)).tap { |r| puts "Logged in #{r.count { |x| x['outcome'] == 'recorded' }} agents" }
+loop do
+  round += 1
+  break if opts[:rounds] && round > opts[:rounds]
+  sleep opts[:interval]
+  events = sim.step(count: opts[:moves])
+  results = send_events.call(events)
+  events.zip(results).each { |e, r| puts "#{Time.current.strftime('%H:%M:%S')}  #{e[:agent_id].ljust(6)} -> #{e[:status_code].ljust(10)} #{r['outcome']}" }
+rescue Interrupt
+  puts "\nStopped."
+  break
+end

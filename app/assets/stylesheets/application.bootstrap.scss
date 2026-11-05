@@ -1,0 +1,30 @@
+@import 'bootstrap/scss/bootstrap';
+@import 'bootstrap-icons/font/bootstrap-icons';
+
+// --- The live board -------------------------------------------------------------------------
+.board-table {
+  --bs-table-bg: transparent;
+  th { font-size: .78rem; text-transform: uppercase; letter-spacing: .03em; color: var(--bs-secondary-color); font-weight: 600; }
+  .board-team-header th { background: var(--bs-tertiary-bg); font-size: .85rem; text-transform: none; letter-spacing: 0; color: var(--bs-body-color); padding-top: .55rem; padding-bottom: .55rem; border-top: 1px solid var(--bs-border-color); }
+  .board-row td { padding-top: .45rem; padding-bottom: .45rem; vertical-align: middle; }
+  .board-row-offline .board-agent a, .board-row-offline .board-login { opacity: .6; }
+  .board-footer td { background: var(--bs-tertiary-bg); border-top: 2px solid var(--bs-border-color); padding: .7rem .75rem; }
+}
+
+.board-time { font-variant-numeric: tabular-nums; font-weight: 500; }
+.elapsed-warn { color: #b58105; font-weight: 700; }
+.elapsed-over { color: var(--bs-danger); font-weight: 700; }
+
+// A row whose status just changed glows briefly.
+@keyframes board-row-flash { from { background-color: rgba(255, 193, 7, .45); } to { background-color: transparent; } }
+.row-flash > td { animation: board-row-flash 1.8s ease-out; }
+
+// Horizontal bar of the day: one colored segment per status, a thin line for "now".
+.board-bar-cell { width: 45%; min-width: 18rem; }
+.board-bar { position: relative; height: 1.15rem; background: var(--bs-tertiary-bg); border-radius: .3rem; overflow: hidden;
+  background-image: linear-gradient(to right, rgba(0,0,0,.07) 1px, transparent 1px); background-size: 12.5% 100%; }
+.board-seg { position: absolute; top: 0; bottom: 0; min-width: 2px; }
+.board-now { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--bs-danger); opacity: .85; z-index: 2; }
+.board-axis { display: block; position: relative; height: 1rem; margin-top: .15rem; }
+.board-tick { position: absolute; transform: translateX(-50%); font-weight: 400; font-size: .7rem; text-transform: none; letter-spacing: 0; white-space: nowrap; }
+.board-axis .board-tick:first-child { transform: none; }

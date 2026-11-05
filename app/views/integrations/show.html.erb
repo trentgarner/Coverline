@@ -1,0 +1,83 @@
+<% content_for :title, "Integration" %>
+<h1 class="h3 mb-1">Phone system integration</h1>
+<p class="text-body-secondary">The phone system sends each agent status change to Coverline's webhook. Your agents' <em>phone system agent ID</em> (on the Agents page) and the status <em>phone codes</em> (on the Statuses page) are how an event finds its agent and its status.</p>
+
+<% if @new_key %>
+  <div class="alert alert-warning" id="new-api-key">
+    <div class="fw-semibold">Copy your new API key now. It is shown only once.</div>
+    <div class="font-monospace user-select-all my-2"><%= @new_key %></div>
+    <div class="small">Any system still using the old key stops working until you give it this one.</div>
+  </div>
+<% end %>
+
+<div class="row g-4">
+  <div class="col-lg-6">
+    <div class="card h-100"><div class="card-header fw-semibold">Webhook</div><div class="card-body">
+      <label class="form-label small mb-0">URL</label>
+      <div class="font-monospace user-select-all mb-3" id="webhook-url"><%= @webhook_url %></div>
+
+      <label class="form-label small mb-0">API key</label>
+      <div class="mb-1" id="api-key-status">
+        <% if @organization.api_key? %>
+          <span class="font-monospace"><%= @organization.api_key_prefix %>…</span>
+          <span class="text-body-secondary small">created <%= @organization.api_key_created_at&.strftime("%b %-d, %Y %-I:%M %p") %></span>
+        <% else %>
+          <span class="text-body-secondary">No key yet.</span>
+        <% end %>
+      </div>
+      <%= button_to (@organization.api_key? ? "Regenerate key" : "Generate API key"), regenerate_key_integration_path,
+            class: "btn btn-sm #{@organization.api_key? ? 'btn-outline-danger' : 'btn-primary'}",
+            form: { data: { turbo_confirm: (@organization.api_key? ? "Replace the key? The old one stops working immediately." : nil) } } %>
+
+      <hr>
+      <div class="small text-body-secondary mb-1">Send one event, or <code>{"events": [...]}</code> for several:</div>
+      <pre class="small bg-body-tertiary p-2 rounded mb-2"><code>curl -X POST <%= @webhook_url %> \
+  -H "Authorization: Bearer YOUR_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"agent_id":"A1001","status_code":"AUX-2",
+       "occurred_at":"<%= Time.current.utc.iso8601 %>","event_id":"unique-id-1"}'</code></pre>
+      <div class="small text-body-secondary">Re-sending the same <code>event_id</code> is harmless, so the phone system can safely retry.</div>
+      <div class="small mt-2" id="last-event">
+        <%= @last_phone_event_at ? "Last event received #{time_ago_in_words(@last_phone_event_at)} ago." : "No events received yet." %>
+      </div>
+    </div></div>
+  </div>
+
+  <div class="col-lg-6">
+    <div class="card mb-4" id="unmapped-codes"><div class="card-header fw-semibold">Unmapped phone codes <span class="badge text-bg-<%= @unmapped_codes.any? ? 'warning' : 'secondary' %>"><%= @unmapped_codes.size %></span></div>
+      <div class="card-body">
+        <% if @unmapped_codes.empty? %>
+          <span class="text-body-secondary">Every code received so far maps to a status.</span>
+        <% else %>
+          <p class="small text-body-secondary">These codes were received but mean nothing yet, so agents show as <em>Unmapped</em>. Pick what each should mean from now on.</p>
+          <% @unmapped_codes.each do |code, count| %>
+            <%= form_with url: map_code_integration_path, class: "row g-2 align-items-center mb-2", data: { code: code } do |f| %>
+              <%= f.hidden_field :phone_code, value: code %>
+              <div class="col-4"><code><%= code %></code> <span class="text-body-secondary small">×<%= count %></span></div>
+              <div class="col-5"><%= f.select :status_id, @statuses.reject { |s| @organization.unmapped_status?(s) }.map { |s| [ s.name, s.id ] }, {}, class: "form-select form-select-sm" %></div>
+              <div class="col-3"><%= f.submit "Map", class: "btn btn-sm btn-primary w-100" %></div>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+
+    <div class="card" id="unknown-agents"><div class="card-header fw-semibold">Unknown agent IDs <span class="badge text-bg-<%= @unknown_ids.any? ? 'warning' : 'secondary' %>"><%= @unknown_ids.size %></span></div>
+      <div class="card-body">
+        <% if @unknown_ids.empty? %>
+          <span class="text-body-secondary">Every agent ID received so far belongs to someone.</span>
+        <% else %>
+          <p class="small text-body-secondary">Events arrived for IDs no agent has. They're being held. Link an ID to the right person and the held events are replayed.</p>
+          <% @unknown_ids.each do |phone_id, count| %>
+            <%= form_with url: link_agent_integration_path, class: "row g-2 align-items-center mb-2", data: { phone_id: phone_id } do |f| %>
+              <%= f.hidden_field :phone_agent_id, value: phone_id %>
+              <div class="col-4"><code><%= phone_id %></code> <span class="text-body-secondary small">×<%= count %></span></div>
+              <div class="col-5"><%= f.select :user_id, @people.map { |u| [ "#{u.full_name}#{" (#{u.phone_agent_id})" if u.phone_agent_id}", u.id ] }, {}, class: "form-select form-select-sm" %></div>
+              <div class="col-3"><%= f.submit "Link", class: "btn btn-sm btn-primary w-100" %></div>
+            <% end %>
+          <% end %>
+        <% end %>
+      </div>
+    </div>
+  </div>
+</div>

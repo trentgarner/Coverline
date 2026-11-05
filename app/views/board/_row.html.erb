@@ -1,0 +1,20 @@
+<%# One agent's row. Rendered on page load and again, alone, by each live update. Same for every viewer. %>
+<% user = row.user; status = row.status %>
+<tr id="<%= dom_id(user, :board_row) %>" class="board-row <%= 'board-row-offline' if status&.category == 'offline' %>"
+    data-user-id="<%= user.id %>" data-team-id="<%= user.team_id %>" data-name="<%= user.full_name.downcase %>"
+    data-status-id="<%= status&.id %>" data-status-order="<%= status&.sort_order %>"
+    data-since="<%= row.run_started_at ? (row.run_started_at.to_f * 1000).to_i : '' %>"
+    data-events="<%= row.events.map { |e| [ (e.started_at.to_f * 1000).to_i, (e.ended_at ? (e.ended_at.to_f * 1000).to_i : nil), e.status_id ] }.to_json %>">
+  <td class="board-agent">
+    <%= link_to user.full_name, agent_path(user), class: "link-body-emphasis link-underline-opacity-0 link-underline-opacity-75-hover fw-medium" %>
+  </td>
+  <td class="board-status"><%= status ? status_pill(status) : tag.span("No data yet", class: "text-body-secondary small") %></td>
+  <td class="board-time">
+    <% if row.run_started_at %>
+      <span class="elapsed" data-elapsed-since="<%= (row.run_started_at.to_f * 1000).to_i %>"
+            <% if status&.time_limit_minutes %>data-limit-seconds="<%= status.time_limit_minutes * 60 %>"<% end %>><%= format_elapsed(Time.current - row.run_started_at) %></span>
+    <% else %>—<% end %>
+  </td>
+  <td class="board-login small"><%= row.logged_in_at ? row.logged_in_at.in_time_zone.strftime("%-I:%M %p") : "—" %></td>
+  <td class="board-bar-cell"><div class="board-bar" data-board-target="bar"></div></td>
+</tr>

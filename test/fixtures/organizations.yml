@@ -1,0 +1,7 @@
+summit:
+  name: Summit Sales Co (fake)
+  timezone: America/Chicago
+
+other:
+  name: Other Org (fake)
+  timezone: America/New_York

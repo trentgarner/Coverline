@@ -1,0 +1,13 @@
+<% content_for :title, "Agents added" %>
+<h1 class="h3 mb-1"><%= pluralize(@created.size, "agent") %> added</h1>
+<div class="alert alert-warning">These temporary passwords are shown <strong>only once</strong>. Print or copy them now and hand them out; people can change their password after they sign in.</div>
+<div class="card mb-3"><div class="table-responsive"><table class="table mb-0" id="new-credentials">
+  <thead><tr><th>Name</th><th>Email (login)</th><th>Phone ID</th><th>Temporary password</th></tr></thead>
+  <tbody>
+    <% @created.each do |user, password| %>
+      <tr><td><%= user.full_name %></td><td><%= user.email_address %></td><td><%= user.phone_agent_id || "—" %></td><td class="font-monospace"><%= password %></td></tr>
+    <% end %>
+  </tbody>
+</table></div></div>
+<button class="btn btn-outline-secondary" onclick="window.print()">Print</button>
+<%= link_to "Done", agents_path(team_id: @created.first.first.team_id), class: "btn btn-primary" %>

@@ -1,0 +1,4 @@
+<% content_for :title, "New status" %>
+<div class="mb-3"><%= link_to "← Statuses", statuses_path, class: "link-secondary small" %></div>
+<h1 class="h3 mb-3">New status</h1>
+<div class="card" style="max-width: 50rem"><div class="card-body"><%= render "form", status: @status %></div></div>

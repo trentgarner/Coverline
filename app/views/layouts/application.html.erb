@@ -1,29 +1,52 @@
 <!DOCTYPE html>
 <html>
   <head>
-    <title><%= content_for(:title) || "Coverline" %></title>
+    <title><%= content_for(:title) ? "#{content_for(:title)} · Coverline" : "Coverline" %></title>
     <meta name="viewport" content="width=device-width,initial-scale=1">
-    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="application-name" content="Coverline">
-    <meta name="mobile-web-app-capable" content="yes">
     <%= csrf_meta_tags %>
     <%= csp_meta_tag %>
 
     <%= yield :head %>
 
-    <%# Enable PWA manifest for installable apps (make sure to enable in config/routes.rb too!) %>
-    <%#= tag.link rel: "manifest", href: pwa_manifest_path(format: :json) %>
-
     <link rel="icon" href="/icon.png" type="image/png">
     <link rel="icon" href="/icon.svg" type="image/svg+xml">
     <link rel="apple-touch-icon" href="/icon.png">
 
-    <%# Includes all stylesheet files in app/assets/stylesheets %>
     <%= stylesheet_link_tag :app, "data-turbo-track": "reload" %>
     <%= javascript_importmap_tags %>
   </head>
 
   <body>
-    <%= yield %>
+    <% if authenticated? && current_user %>
+      <nav class="navbar navbar-expand-lg bg-dark navbar-dark">
+        <div class="container-fluid px-4">
+          <%= link_to "Coverline", root_path, class: "navbar-brand fw-semibold" %>
+          <ul class="navbar-nav flex-row gap-3 me-auto ms-3">
+            <% if policy(:board).view? %><li class="nav-item"><%= nav_link "Board", board_path, active: controller_name == "board" %></li><% end %>
+            <% if policy(User).index? %><li class="nav-item"><%= nav_link "Agents", agents_path, active: controller_name == "agents" %></li><% end %>
+            <% if policy(Team).index? %><li class="nav-item"><%= nav_link "Teams", teams_path, active: %w[teams team_accesses].include?(controller_name) %></li><% end %>
+            <% if policy(Status).create? %><li class="nav-item"><%= nav_link "Statuses", statuses_path, active: controller_name == "statuses" %></li><% end %>
+            <% if policy(:organization).manage_integration? %><li class="nav-item"><%= nav_link "Integration", integration_path, active: controller_name == "integrations" %></li><% end %>
+            <% if policy(:audit_log).index? %><li class="nav-item"><%= nav_link "Audit log", audit_logs_path, active: controller_name == "audit_logs" %></li><% end %>
+          </ul>
+          <div class="d-flex align-items-center gap-3">
+            <span class="text-light small"><%= current_user.full_name %></span>
+            <span class="badge text-bg-secondary" id="role-badge"><%= role_label(current_user.role) %></span>
+            <%= button_to "Sign out", session_path, method: :delete, class: "btn btn-outline-light btn-sm" %>
+          </div>
+        </div>
+      </nav>
+    <% end %>
+
+    <main class="container-fluid px-4 py-4">
+      <% flash.each do |type, message| %>
+        <div class="alert alert-<%= type == 'notice' ? 'success' : 'danger' %> alert-dismissible fade show" role="alert">
+          <%= message %>
+          <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+      <% end %>
+      <%= yield %>
+    </main>
   </body>
 </html>

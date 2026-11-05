@@ -1,0 +1,23 @@
+available_ready:
+  status: available
+  phone_code: Ready
+
+break_aux2:
+  status: break
+  phone_code: AUX-2
+
+break_break:
+  status: break
+  phone_code: Break
+
+other_org_ready:
+  status: other_org_status
+  phone_code: Ready
+
+on_call_incall:
+  status: on_call
+  phone_code: InCall
+
+offline_loggedout:
+  status: offline
+  phone_code: LOGGEDOUT

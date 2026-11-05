@@ -1,0 +1,4 @@
+<% content_for :title, "Edit #{@user.full_name}" %>
+<div class="mb-3"><%= link_to "← Agents", agents_path, class: "link-secondary small" %></div>
+<h1 class="h3 mb-3">Edit <%= @user.full_name %></h1>
+<div class="card" style="max-width: 48rem"><div class="card-body"><%= render "form", user: @user %></div></div>

@@ -1,0 +1,39 @@
+available:
+  organization: summit
+  name: Available
+  color: "#2f9e6f"
+  category: ready
+  productive: true
+  counts_toward_cft: true
+  sort_order: 1
+
+on_call:
+  organization: summit
+  name: On Call
+  color: "#1f6fb2"
+  category: on_call
+  productive: true
+  counts_toward_cft: true
+  sort_order: 2
+
+break:
+  organization: summit
+  name: Break
+  color: "#e8883a"
+  category: break
+  time_limit_minutes: 15
+  sort_order: 3
+
+offline:
+  organization: summit
+  name: Offline
+  color: "#6c757d"
+  category: offline
+  sort_order: 4
+
+other_org_status:
+  organization: other
+  name: Available
+  color: "#00aa00"
+  category: ready
+  sort_order: 1

@@ -1,0 +1,37 @@
+<% content_for :title, "Statuses" %>
+<div class="d-flex align-items-center mb-1">
+  <h1 class="h3 mb-0">Statuses</h1>
+  <%= link_to "New status", new_status_path, class: "btn btn-primary btn-sm ms-auto" if policy(Status).create? %>
+</div>
+<p class="text-body-secondary">What an agent can be doing, the color it shows on the board, and the phone-system codes that mean it. Drag rows to change the order.</p>
+<% if @unmapped_codes.any? %>
+  <div class="alert alert-warning" id="unmapped-warning">
+    <strong><%= pluralize(@unmapped_codes.size, "phone code") %> from the phone system <%= @unmapped_codes.size == 1 ? "isn't" : "aren't" %> mapped to a status</strong>
+    and <%= @unmapped_codes.size == 1 ? "is" : "are" %> showing agents as <em>Unmapped</em>:
+    <%= @unmapped_codes.map { |code, n| "#{code} (#{pluralize(n, 'event')})" }.to_sentence %>.
+    <% if policy(:organization).manage_integration? %><%= link_to "Fix on the Integration screen", integration_path, class: "alert-link" %>
+    <% else %>Ask a Super User to map them, or add the code to the right status below.<% end %>
+  </div>
+<% end %>
+<div class="card"><div class="table-responsive">
+  <table class="table align-middle mb-0" id="statuses">
+    <thead><tr><th style="width:2rem"></th><th>Status</th><th>Category</th><th>Counts toward CFT</th><th>Productive</th><th>Limit</th><th>Phone codes</th><th></th></tr></thead>
+    <tbody data-controller="sortable" data-sortable-url-value="<%= reorder_statuses_path %>">
+      <% @statuses.each do |s| %>
+        <tr data-sortable-target="row" data-id="<%= s.id %>" data-status="<%= s.name %>" draggable="true"
+            data-action="dragstart->sortable#dragStart dragover->sortable#dragOver dragend->sortable#dragEnd"
+            class="<%= 'text-body-secondary' unless s.active? %>">
+          <td class="text-body-secondary" style="cursor: grab" title="Drag to reorder">⋮⋮</td>
+          <td><%= status_pill(s) %> <%= tag.span("inactive", class: "badge text-bg-light border ms-1") unless s.active? %></td>
+          <td><%= s.category.humanize %></td>
+          <td><%= s.counts_toward_cft? ? "Yes" : "—" %></td>
+          <td><%= s.productive? ? "Yes" : "—" %></td>
+          <td><%= s.time_limit_minutes ? "#{s.time_limit_minutes} min" : "—" %></td>
+          <td class="small"><%= s.status_codes.map(&:phone_code).sort.join(", ").presence || tag.span("none", class: "text-body-secondary") %></td>
+          <td class="text-end"><%= link_to "Edit", edit_status_path(s), class: "btn btn-sm btn-outline-secondary" %></td>
+        </tr>
+      <% end %>
+      <% if @statuses.empty? %><tr><td colspan="8" class="text-center text-body-secondary py-4">No statuses yet.</td></tr><% end %>
+    </tbody>
+  </table>
+</div></div>

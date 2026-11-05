@@ -1,0 +1,15 @@
+team_a:
+  organization: summit
+  name: Sales Team A
+
+team_b:
+  organization: summit
+  name: Sales Team B
+
+team_c:
+  organization: summit
+  name: Sales Team C
+
+other_team:
+  organization: other
+  name: Other Team
